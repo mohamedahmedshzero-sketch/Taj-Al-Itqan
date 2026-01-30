@@ -46,7 +46,7 @@ version = 1.0.0
 
 # (list) Application requirements
 # python3,kivy
-requirements = python3,kivy==2.3.1,kivymd==0.104.2,qrcode[pil],pillow>=9.0.0,arabic-reshaper,python-bidi,requests,python-dotenv
+requirements = python3,kivy==2.2.0,kivymd==0.104.2,qrcode,pillow,arabic-reshaper,python-bidi,requests
 
 # (str) Supported orientation (landscape, portrait or all)
 orientation = portrait
@@ -125,7 +125,7 @@ android.allow_backup = True
 p4a.provider = pip
 
 # (str) python-for-android branch to use, defaults to master
-p4a.branch = master
+p4a.branch = develop
 
 # (str) python-for-android git repo to use, defaults to official
 #p4a.url = https://github.com/kivy/python-for-android
