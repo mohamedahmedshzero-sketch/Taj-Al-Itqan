@@ -46,7 +46,7 @@ version = 1.0.0
 
 # (list) Application requirements
 # python3,kivy
-requirements = python3,kivy==2.3.1,kivymd==0.104.2,qrcode[pil],pillow>=9.0.0,arabic-reshaper,python-bidi,requests,python-dotenv
+requirements = python3,kivy==2.2.0,kivymd==0.104.2,qrcode,pillow,arabic-reshaper,python-bidi,requests,python-dotenv
 
 # (str) Supported orientation (landscape, portrait or all)
 orientation = portrait
@@ -70,7 +70,8 @@ android.api = 31
 android.minapi = 21
 
 # (str) Android NDK version to use
-#android.ndk = 23b
+# Leave empty to auto-detect (recommended)
+android.ndk = 25b
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 #android.private_storage = True
@@ -144,6 +145,12 @@ p4a.copy_libs = 1
 
 # (str) The bootstrap to use. Leave empty to let python-for-android choose.
 p4a.bootstrap = sdl2
+
+# Gradle settings
+gradleVersion = 7.6.1
+
+# (bool) Enable/Disable gradle wrapper auto-generation
+use_gradle_wrapper = True
 
 
 #
