@@ -1,0 +1,62 @@
+name: Build APK (Debug)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential git wget \
+            openjdk-17-jdk libssl-dev libffi-dev \
+            libsqlite3-dev libbz2-dev libjpeg-dev \
+            libpng-dev libsdl2-dev libsdl2-image-dev \
+            libsdl2-mixer-dev libsdl2-ttf-dev
+
+      - name: Install Python packages
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install cython==0.29.34 buildozer
+
+      - name: Display versions
+        run: |
+          python3 --version
+          buildozer --version
+          java -version
+
+      - name: Build APK
+        run: |
+          cd /home/runner/work/Taj-Al-Itqan/Taj-Al-Itqan
+          buildozer android debug
+
+      - name: Check APK
+        run: |
+          find . -name "*.apk" -type f
+          ls -lah bin/ 2>/dev/null || echo "No bin/"
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taj-apk
+          path: bin/*.apk
