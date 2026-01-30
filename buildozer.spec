@@ -46,7 +46,7 @@ version = 1.0.0
 
 # (list) Application requirements
 # python3,kivy
-requirements = python3,kivy==2.2.0,kivymd==0.104.2,qrcode,pillow>=9.0.0,arabic-reshaper,python-bidi
+requirements = python3,kivy==2.3.1,kivymd==0.104.2,qrcode[pil],pillow>=9.0.0,arabic-reshaper,python-bidi,requests,python-dotenv
 
 # (str) Supported orientation (landscape, portrait or all)
 orientation = portrait

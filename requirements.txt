@@ -2,14 +2,15 @@
 # Taj Al-Itqan Dependencies - Compatible with APK/Buildozer
 
 # GUI Framework (Kivy for Android/iOS)
-kivy>=2.1.0,<2.2.0
-kivymd>=0.104.2,<0.105.0
+# Use a Kivy release compatible with Python 3.11+ and the Docker/CI images
+kivy>=2.3.1,<2.4.0
+kivymd==0.104.2
 
 # QR Code Generation
 qrcode[pil]>=7.4.0
 
 # Image Processing
-Pillow>=9.0.0,<10.0.0
+Pillow>=9.0.0,<13.0.0
 
 # Arabic Text Support
 arabic-reshaper>=0.4.0
@@ -22,6 +23,9 @@ python-dotenv>=1.0.0
 
 # Optional: For web sharing features
 requests>=2.28.0
+
+# Build / packaging helpers
+buildozer
 
 # Android specific (optional for buildozer)
 # pyjnius
