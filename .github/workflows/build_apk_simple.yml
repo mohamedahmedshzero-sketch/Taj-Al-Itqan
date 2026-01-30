@@ -1,0 +1,58 @@
+name: Build APK with Kivy Buildozer
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-slim
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential git wget zip unzip \
+            openjdk-17-jdk openjdk-17-jdk-headless \
+            libssl-dev libffi-dev libsqlite3-dev \
+            libncurses-dev libbz2-dev liblzma-dev \
+            libjpeg-dev libpng-dev libzbar0 \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            pkg-config autoconf automake libtool
+
+      - name: Set Java environment
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH=$JAVA_HOME/bin:$PATH
+          java -version
+
+      - name: Install Python tools
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install --upgrade cython==0.29.34
+          python3 -m pip install --upgrade buildozer
+
+      - name: Build APK
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          P4A_RELEASE_DATE: 2024010100
+        run: |
+          cd $GITHUB_WORKSPACE
+          buildozer android debug
+          ls -la bin/ || true
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taj-al-itqan-apk
+          path: bin/*.apk
+          retention-days: 30
+          if-no-files-found: ignore
