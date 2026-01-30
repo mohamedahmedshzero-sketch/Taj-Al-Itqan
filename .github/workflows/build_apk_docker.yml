@@ -1,0 +1,56 @@
+name: Build APK with Docker
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            python3 python3-pip python3-venv python3-dev \
+            openjdk-17-jdk git zip unzip build-essential \
+            libssl-dev zlib1g-dev libffi-dev liblzma-dev \
+            libjpeg-dev libpng-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            wget curl ca-certificates
+
+      - name: Set up Python environment
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install cython==0.29.34
+          python3 -m pip install buildozer==1.3.0
+
+      - name: Build APK
+        env:
+          P4A_BRANCH: master
+          ANDROID_SKIP_UPDATE: false
+        run: |
+          cd /github/workspace
+          buildozer android debug 2>&1 | tee build.log
+          
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taj-al-itqan-apk
+          path: bin/*.apk
+          retention-days: 30
+
+      - name: Show build log on failure
+        if: failure()
+        run: |
+          echo "=== Last 50 lines of build log ===" 
+          tail -50 build.log || echo "build.log not found"
+          echo "=== Directory listing ===" 
+          ls -la || echo "ls failed"

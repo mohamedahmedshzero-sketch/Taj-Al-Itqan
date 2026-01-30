@@ -8,7 +8,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,68 +19,74 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Install system packages
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Update apt cache
         run: |
           sudo apt-get update
+          sudo apt-get upgrade -y
+
+      - name: Install system dependencies
+        run: |
           sudo apt-get install -y --no-install-recommends \
-            python3-pip python3-venv python3-dev git \
-            openjdk-17-jdk zip unzip build-essential \
-            libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
-            libncurses5-dev libncursesw5-dev libffi-dev liblzma-dev \
-            libjpeg-dev libpng-dev \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libcurl4-openssl-dev libssl-dev pkg-config \
-            autoconf automake libtool
+            build-essential \
+            git \
+            libffi-dev \
+            libssl-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libsqlite3-dev \
+            libzbar0 \
+            libbz2-dev \
+            liblzma-dev \
+            zlib1g-dev \
+            unzip \
+            wget
 
-      - name: Install Python tools
+      - name: Install Python dependencies
         run: |
-          python3 -m pip install --upgrade pip setuptools wheel virtualenv
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade setuptools wheel
           python3 -m pip install --upgrade cython==0.29.34
+          python3 -m pip install --upgrade buildozer
 
-      - name: Install Buildozer and dependencies
-        run: |
-          python3 -m pip install --upgrade buildozer==1.4.0 || python3 -m pip install --upgrade buildozer
-          python3 -m pip install --upgrade Cython
+      - name: Create buildozer cache directory
+        run: mkdir -p ~/.buildozer
 
-      - name: Show Buildozer version
-        run: buildozer --version || true
+      - name: Display buildozer version
+        run: buildozer --version
 
-      - name: Prepare keystore (optional)
-        if: secrets.ANDROID_KEYSTORE != ''
-        run: |
-          echo "Keystore secret found — decoding to taj_keystore.jks"
-          echo "$ANDROID_KEYSTORE" | base64 --decode > taj_keystore.jks
-          echo "Appended keystore settings to buildozer.spec"
-          cp buildozer.spec buildozer.spec.ci.bak || true
-          cat >> buildozer.spec <<EOF
-android.release_keystore = taj_keystore.jks
-android.release_keyalias = ${ANDROID_KEY_ALIAS}
-android.release_keypass = ${ANDROID_KEY_PASSWORD}
-android.release_storepass = ${ANDROID_KEY_PASSWORD}
-EOF
-
-      - name: Build APK (debug or release)
+      - name: Build APK
         env:
-          P4A_BRANCH: master
-          ANDROID_SDK_ROOT: /root/.buildozer/android/platform/android-sdk
-          ANDROID_NDK_ROOT: /root/.buildozer/android/platform/android-ndk
+          P4A_RELEASE_DATE: 2024010100
         run: |
-          export PATH="/root/.buildozer/android/platform/android-sdk/tools:$PATH"
-          buildozer -v android debug 2>&1 | tee build.log
+          buildozer -v android debug 2>&1
           
-      - name: Check build output
+      - name: List build outputs
         if: always()
         run: |
-          ls -la bin/ || echo "bin directory not found"
-          if [ -f build.log ]; then
-            tail -100 build.log
-          fi
+          echo "=== Checking bin directory ===" 
+          ls -lah bin/ || echo "bin/ not found"
+          echo "=== Checking .buildozer ===" 
+          du -sh ~/.buildozer || echo ".buildozer not found"
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: taj-al-itqan-apk
           path: |
             bin/*.apk
             bin/*.aab
+          retention-days: 30
+          if-no-files-found: warn
