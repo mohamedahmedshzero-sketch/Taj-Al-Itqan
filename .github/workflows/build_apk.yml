@@ -42,32 +42,30 @@ jobs:
 
       - name: Prepare keystore (optional)
         if: secrets.ANDROID_KEYSTORE != ''
-        env:
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           echo "Keystore secret found — decoding to taj_keystore.jks"
           echo "$ANDROID_KEYSTORE" | base64 --decode > taj_keystore.jks
           echo "Appended keystore settings to buildozer.spec"
           cp buildozer.spec buildozer.spec.ci.bak || true
-          cat >> buildozer.spec << 'ENDSPEC'
+          cat >> buildozer.spec <<EOF
 android.release_keystore = taj_keystore.jks
 android.release_keyalias = ${ANDROID_KEY_ALIAS}
 android.release_keypass = ${ANDROID_KEY_PASSWORD}
 android.release_storepass = ${ANDROID_KEY_PASSWORD}
-ENDSPEC
+EOF
 
       - name: Build APK (debug or release)
         env:
           P4A_BRANCH: master
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           ls -la
-          # Only build debug for now (release requires keystore)
-          buildozer -v android debug
+          if [ -n "$ANDROID_KEYSTORE" ]; then
+            echo "Building RELEASE APK (keystore provided)"
+            buildozer -v android release
+          else
+            echo "Building DEBUG APK"
+            buildozer -v android debug
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
