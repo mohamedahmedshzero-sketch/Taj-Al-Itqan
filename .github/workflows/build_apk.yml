@@ -6,87 +6,74 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-22.04
     timeout-minutes: 240
-    
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
-      - name: Set up Python
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: '3.10'
 
-      - name: Update apt cache
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Update system packages
         run: |
           sudo apt-get update
-          sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential autoconf automake libtool pkg-config
 
-      - name: Install system dependencies
+      - name: Install Android build dependencies
         run: |
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            git \
-            libffi-dev \
-            libssl-dev \
-            libjpeg-dev \
-            libpng-dev \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libsqlite3-dev \
-            libzbar0 \
-            libbz2-dev \
-            liblzma-dev \
-            zlib1g-dev \
-            unzip \
-            wget
+          sudo apt-get install -y \
+            libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev \
+            libncurses5-dev libncursesw5-dev liblzma-dev zlib1g-dev \
+            libjpeg-dev libpng-dev libsdl2-dev libsdl2-image-dev \
+            libsdl2-mixer-dev libsdl2-ttf-dev
 
-      - name: Install Python dependencies
+      - name: Install Python build tools
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install --upgrade setuptools wheel
-          python3 -m pip install --upgrade cython==0.29.34
-          python3 -m pip install --upgrade buildozer
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install cython==0.29.34
+          python3 -m pip install buildozer==1.4.0
 
-      - name: Create buildozer cache directory
-        run: mkdir -p ~/.buildozer
-
-      - name: Display buildozer version
-        run: buildozer --version
-
-      - name: Build APK
-        env:
-          P4A_RELEASE_DATE: 2024010100
+      - name: Show versions
         run: |
-          buildozer -v android debug 2>&1
-          
-      - name: List build outputs
-        if: always()
-        run: |
-          echo "=== Checking bin directory ===" 
-          ls -lah bin/ || echo "bin/ not found"
-          echo "=== Checking .buildozer ===" 
-          du -sh ~/.buildozer || echo ".buildozer not found"
+          java -version
+          python3 --version
+          buildozer --version
 
-      - name: Upload APK artifact
+      - name: Build APK (debug)
+        run: |
+          buildozer android debug 2>&1
+
+      - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: taj-al-itqan-apk
-          path: |
-            bin/*.apk
-            bin/*.aab
+          path: bin/*.apk
           retention-days: 30
-          if-no-files-found: warn
+
+      - name: Show build directory on failure
+        if: failure()
+        run: |
+          echo "=== Checking build output ===" 
+          ls -la bin/ 2>/dev/null || echo "bin/ directory not created"
+          echo "=== Checking .buildozer ===" 
+          du -sh ~/.buildozer 2>/dev/null || echo ".buildozer not found"
