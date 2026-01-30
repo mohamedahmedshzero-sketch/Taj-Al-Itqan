@@ -8,51 +8,46 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: python:3.11-slim
     
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            build-essential git wget zip unzip \
-            openjdk-17-jdk openjdk-17-jdk-headless \
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3-pip python3-dev git wget zip unzip \
+            openjdk-17-jdk \
             libssl-dev libffi-dev libsqlite3-dev \
-            libncurses-dev libbz2-dev liblzma-dev \
-            libjpeg-dev libpng-dev libzbar0 \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            pkg-config autoconf automake libtool
+            libbz2-dev libjpeg-dev libpng-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 
-      - name: Set Java environment
+      - name: Setup Python environment
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH=$JAVA_HOME/bin:$PATH
+          python3 -m pip install --upgrade pip
+          python3 -m pip install cython==0.29.34 buildozer
+
+      - name: Check Java
+        run: |
+          which java
           java -version
-
-      - name: Install Python tools
-        run: |
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install --upgrade cython==0.29.34
-          python3 -m pip install --upgrade buildozer
+          echo "JAVA_HOME=$JAVA_HOME"
 
       - name: Build APK
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-          PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-          P4A_RELEASE_DATE: 2024010100
         run: |
-          cd $GITHUB_WORKSPACE
-          buildozer android debug
-          ls -la bin/ || true
-
-      - name: Upload APK
+          ls -la
+          buildozer android debug 2>&1 | tail -100
+          
+      - name: Check output
         if: always()
+        run: |
+          echo "=== Checking for APK ===" 
+          find . -name "*.apk" -type f
+          ls -lah bin/ 2>/dev/null || echo "bin/ not found"
+
+      - name: Upload artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: taj-al-itqan-apk
+          name: apk
           path: bin/*.apk
-          retention-days: 30
-          if-no-files-found: ignore
